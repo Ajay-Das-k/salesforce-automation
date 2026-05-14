@@ -179,7 +179,7 @@ const fs = require('fs');
                 await dateInput.waitFor({ state: 'visible' });
                 await dateInput.click();
                 await dateInput.fill(EFFECTIVE_DATE);
-                await dateInput.press('Enter');
+                await dateInput.press('Tab'); 
                 console.log(`Filled Date: ${EFFECTIVE_DATE}`);
                 await page.waitForTimeout(1000);
 
@@ -188,26 +188,48 @@ const fs = require('fs');
                 if (await timeInput.isVisible()) {
                     await timeInput.click();
                     await timeInput.fill(EFFECTIVE_TIME);
-                    await timeInput.press('Enter');
+                    await timeInput.press('Tab');
                     console.log(`Filled Time: ${EFFECTIVE_TIME}`);
                     await page.waitForTimeout(1000);
                 }
 
+                // WAIT FOR SALESFORCE TO PROCESS INPUTS
+                console.log('Waiting 3s for form to stabilize...');
+                await page.waitForTimeout(3000);
+
                 // NEXT
                 console.log('--- PHASE: Clicking Next ---');
-                const nextBtn = modalRef2.locator('button:has-text("Next")');
-                await nextBtn.click({ force: true });
-                console.log('Clicked Next, waiting for Page 2...');
-                await page.waitForTimeout(6000);
-
-                if (await nextBtn.isVisible()) {
-                    console.log('STILL ON FIRST PAGE - possible validation error. Retrying Next...');
-                    await nextBtn.click({ force: true });
-                    await page.waitForTimeout(6000);
+                
+                // 1. Check if we are already on Page 2
+                const page2Header = page.locator('th:has-text("Attribute"), .slds-text-title:has-text("Attribute")').first();
+                
+                if (await page2Header.isVisible()) {
+                    console.log('Detected Page 2 already (likely auto-navigated).');
+                } else {
+                    // 2. If not on Page 2, find and click Next
+                    const modalForNext = page.locator('.slds-modal:visible, .forceModal:visible, section[role="dialog"]:visible').first();
+                    const nextBtn = modalForNext.locator('button:has-text("Next")');
+                    
+                    if (await nextBtn.isVisible()) {
+                        await nextBtn.click({ force: true });
+                        console.log('Clicked Next button.');
+                    } else {
+                        console.log('Next button not found, but not on Page 2 either. Waiting...');
+                        await page.waitForTimeout(5000);
+                    }
                 }
 
-                // RE-DETECT MODAL AGAIN FOR PAGE 2
-                console.log('Re-detecting modal for Page 2...');
+                // Final wait for Page 2 content
+                try {
+                    await page2Header.waitFor({ state: 'visible', timeout: 15000 });
+                    console.log('Page 2 confirmed.');
+                } catch (e) {
+                    console.log('Still waiting for Page 2 header...');
+                }
+                
+                await page.waitForTimeout(2000); // Small stabilization wait
+
+                // RE-DETECT MODAL FOR PAGE 2
                 const modalPage2 = page.locator('.slds-modal:visible, .forceModal:visible, section[role="dialog"]:visible').first();
 
                 // Helper to select from custom dropdown on Page 2 by Row Label
@@ -258,6 +280,8 @@ const fs = require('fs');
                 await selectByRow('CabE Band', 'Equals', cbeBand);
 
                 // SAVE
+                console.log('Waiting 2s before saving...');
+                await page.waitForTimeout(2000);
                 console.log('--- PHASE: Clicking Save ---');
                 await modalPage2.locator('button:has-text("Save")').click({ force: true });
                 console.log('Clicked Save, waiting for completion...');
