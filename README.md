@@ -48,8 +48,8 @@ Open `createAttributePricing.js` and update the following constants if needed:
    Once logged in, go back to your terminal and **press ENTER**.
 
 4. **Automation Flow:**
-   The script will iterate through all 200 combinations.
-   - It will prompt you to click **"New"** in the Attribute Based Adjustment section for each record to ensure the modal stability.
+   The script will iterate through all 200 combinations. 
+   - It **automatically clicks "New"** in the Attribute Based Adjustment section for each record.
    - The script fills both Page 1 (Product info) and Page 2 (Attribute values) automatically.
 
 ---

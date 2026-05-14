@@ -82,8 +82,16 @@ const fs = require('fs');
 
                 count++;
 
-                console.log(`\n[${count}/200] PLEASE CLICK "NEW" in Attribute Based Adjustment section...`);
+                console.log(`\n[${count}/200] Automating "New" button click for Attribute Based Adjustment...`);
                 
+                // Find the specific section for Attribute Based Adjustment and click its New button
+                const abaSection = page.locator('article, .slds-card, lst-related-list-container').filter({ hasText: /^Attribute Based Adjustment/ }).first();
+                const newBtn = abaSection.locator('button:has-text("New"), a[title="New"], .slds-button:has-text("New")').first();
+                
+                await newBtn.waitFor({ state: 'visible', timeout: 15000 });
+                await newBtn.click();
+                console.log('Clicked "New" button.');
+
                 // Wait for modal to appear
                 const modal = page.locator('.slds-modal:visible, .forceModal:visible, .uiModal:visible, section[role="dialog"]:visible, div[role="dialog"]:visible').filter({ hasText: /New Attribute Based Adjustment|Attribute Based Adjustment/ }).first();
                 await modal.waitFor({ state: 'visible', timeout: 300000 }); // Wait up to 5 minutes
@@ -166,21 +174,24 @@ const fs = require('fs');
                 console.log(`Filled Adjustment Value: ${ADJUSTMENT_VALUE}`);
                 await page.waitForTimeout(2000);
 
-                // DATE
-                console.log('--- PHASE: Filling Date ---');
-                // Target the calendar icon button within the date field
-                const calendarBtn = modalRef2.locator('lightning-datepicker button, button:has(lightning-icon[icon-name*="date"])').first();
-                await calendarBtn.waitFor({ state: 'visible' });
-                await calendarBtn.click();
-                console.log('Clicked small calendar icon, waiting for calendar...');
-                await page.waitForTimeout(2000);
-                
-                // Click day "1" in the calendar
-                const dayOne = page.locator('td:not(.slds-day_adjacent-month) span').filter({ hasText: /^1$/ }).first();
-                await dayOne.waitFor({ state: 'visible' });
-                await dayOne.click();
-                console.log('Clicked day "1" in calendar (Time should auto-populate)');
-                await page.waitForTimeout(2000);
+                // Target the date input field directly
+                const dateInput = modalRef2.locator('lightning-datepicker input').first();
+                await dateInput.waitFor({ state: 'visible' });
+                await dateInput.click();
+                await dateInput.fill(EFFECTIVE_DATE);
+                await dateInput.press('Enter');
+                console.log(`Filled Date: ${EFFECTIVE_DATE}`);
+                await page.waitForTimeout(1000);
+
+                // Target the time input field
+                const timeInput = modalRef2.locator('lightning-timepicker input').first();
+                if (await timeInput.isVisible()) {
+                    await timeInput.click();
+                    await timeInput.fill(EFFECTIVE_TIME);
+                    await timeInput.press('Enter');
+                    console.log(`Filled Time: ${EFFECTIVE_TIME}`);
+                    await page.waitForTimeout(1000);
+                }
 
                 // NEXT
                 console.log('--- PHASE: Clicking Next ---');
